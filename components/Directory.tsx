@@ -1,16 +1,19 @@
-
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { platformsData } from '../data/platforms';
 import { Platform } from '../types';
 import { FilterControls } from './FilterControls';
 import { PlatformGrid } from './PlatformGrid';
 import { Modal } from './Modal';
 import { Reveal } from './Reveal';
+import { Pagination } from './Pagination';
+
+const ITEMS_PER_PAGE = 20;
 
 export const Directory: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('all');
     const [selectedPlatform, setSelectedPlatform] = useState<Platform | null>(null);
+    const [currentPage, setCurrentPage] = useState(1);
 
     const categories = useMemo(() => {
         const uniqueCategories = [...new Set(platformsData.map(p => p.category))];
@@ -35,6 +38,18 @@ export const Directory: React.FC = () => {
 
         return platforms;
     }, [searchTerm, selectedCategory]);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, selectedCategory]);
+
+    const paginatedPlatforms = useMemo(() => {
+        const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+        const endIndex = startIndex + ITEMS_PER_PAGE;
+        return filteredPlatforms.slice(startIndex, endIndex);
+    }, [filteredPlatforms, currentPage]);
+
+    const totalPages = Math.ceil(filteredPlatforms.length / ITEMS_PER_PAGE);
     
     const handlePlatformClick = (platform: Platform) => {
         setSelectedPlatform(platform);
@@ -56,7 +71,12 @@ export const Directory: React.FC = () => {
                         categories={categories}
                     />
                 </Reveal>
-                <PlatformGrid platforms={filteredPlatforms} onPlatformClick={handlePlatformClick} />
+                <PlatformGrid platforms={paginatedPlatforms} onPlatformClick={handlePlatformClick} />
+                <Pagination 
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={setCurrentPage}
+                />
             </div>
             <Modal platform={selectedPlatform} onClose={handleCloseModal} />
         </main>
